@@ -1,3 +1,4 @@
+# print capital A thru Z
 LOAD 00 0E
 ADDI 01
 STORE FF FF
