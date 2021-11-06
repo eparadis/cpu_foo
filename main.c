@@ -16,6 +16,7 @@ const INSTR INSTR_NOP = 0x00;
 const INSTR INSTR_CMP = 0x0B;
 const INSTR INSTR_JE = 0x0C;
 const INSTR INSTR_JLT = 0x0D;
+const INSTR INSTR_JMP = 0x0E;
 
 typedef REGISTER (*loader_t)(IP);
 typedef void (*storer_t)(REGISTER, IP);
@@ -95,6 +96,10 @@ struct cpu_state cpu(
       new_state.ip = curr_state->ip + 3;
       break;
     }
+    case INSTR_JMP: {
+      new_state.ip = load_word(load, curr_state->ip + 1);
+      break;
+    }
     default: {
       new_state.flags |= FLAG_HALT;
       break;
@@ -137,6 +142,9 @@ void debug_dump(uint8_t *block, uint16_t start, uint16_t end) {
       printf("%.4x ", i);
     }
     printf("%.2x ", block[i]);
+    if( i % 16 == 7 ) {
+      printf(" ");
+    }
     if( i % 16 == 15) {
       printf("\n");
     }

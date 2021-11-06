@@ -11,6 +11,7 @@ cat $INFILE | grep -v '^\s*#' | \
  sed s/CMP/0B/g | \
  sed s/JE/0C/g | \
  sed s/JLT/0D/g | \
+ sed s/JMP/0E/g | \
  sed s/DB//g | \
  sed s/DW//g | \
  xxd -r -p > $OUTFILE
