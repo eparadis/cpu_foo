@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
+#include <unistd.h>
 
 typedef uint8_t FLAG;
 typedef uint8_t INSTR;
@@ -108,6 +109,8 @@ struct cpu_state cpu(
   return new_state;
 }
 
+uint8_t _debug = 0;
+
 const IP RAMTOP = 127;
 uint8_t ram[RAMTOP + 1];
 
@@ -115,25 +118,30 @@ REGISTER load( IP addr) {
   if( addr == 0xFFFF) {
     return getchar();
   }
-  printf("DEBUG[LOAD] addr:%.4x\n", addr);
+  if( _debug) printf("DEBUG[LOAD] addr:%.4x\n", addr);
   return ram[addr % (RAMTOP+1)];
 }
 
 void store( REGISTER value, IP addr) {
   // memory mapped IO, or at least O
   if(addr == 0xFFFF) {
-    printf("OUT: %c\n", value);
+    if( _debug)
+      printf("OUT: %c\n", value);
+    else
+      printf("%c", value);
     return;
   }
-  printf("DEBUG[STORE] addr:%.4x value:%.4x\n", addr, value);
+  if( _debug) printf("DEBUG[STORE] addr:%.4x value:%.4x\n", addr, value);
   ram[addr % (RAMTOP+1)] = value;
 }
 
 void debug_state( cpu_state state) {
+  if( _debug == 0) return;
   printf("DEBUG[CPU] flags:%.2x ip:%.4x rA:%.2x\n", state.flags, state.ip, state.rA);
 }
 
 void debug_dump(uint8_t *block, uint16_t start, uint16_t end) {
+  if( _debug == 0) return;
   if( start % 16 != 0) {
     printf("%.4x  ", start); // the odd spacing indicates it's misaligned, which is better than nothing until I figure out how to properly align it
   }
@@ -161,15 +169,24 @@ void zero_addresses(uint8_t *block, uint16_t start, uint16_t end) {
 }
 
 int main( int argc, char *argv[] ) {
-  if( argc < 2) {
-    printf("usage: %s IMAGE.bin\n", argv[0]);
+  int opt;
+  while ((opt = getopt(argc, argv, "d")) != -1) {
+    switch (opt) {
+      case 'd': _debug = 1; break;
+      default:
+        fprintf(stderr, "usage: %s [-d] [file.bin]\n", argv[0]);
+        return 1;
+    }
+  }
+  if( optind >= argc) {
+    fprintf(stderr, "error: ram image file required\n");
     return 1;
   }
 
   zero_addresses(ram, 0, RAMTOP);
 
   IP c = 0;
-  FILE *stream = fopen(argv[1], "r");
+  FILE *stream = fopen(argv[optind], "r");
   while( !feof(stream)) {
     store( fgetc(stream), c);
     c += 1;
