@@ -111,7 +111,7 @@ struct cpu_state cpu(
 
 uint8_t _debug = 0;
 
-const IP RAMTOP = 127;
+const IP RAMTOP = 511;
 uint8_t ram[RAMTOP + 1];
 
 REGISTER load( IP addr) {
@@ -206,6 +206,7 @@ int main( int argc, char *argv[] ) {
   }
 
   debug_state(state);
-  debug_dump(ram, 0, 0x17);
+  debug_dump(ram, 0, 0x27);
   debug_dump(ram, 0x1E, 0x1F);
+  debug_dump(ram, 0x100, 0x11F);
 }
