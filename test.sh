@@ -11,7 +11,7 @@ echo
 
 # compile ex2.asm and run its output, 
 echo "type Z to end example 2. use 'stty cbreak' in your terminal to avoid requiring newlines each character"
-rm -f out && bash ./super_crapsm.sh ex2.asm out && ./main out 
+rm -f out && bash ./super_crapsm.sh ex2.asm out && echo Z | ./main out 
 echo
 
 
