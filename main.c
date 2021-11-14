@@ -10,14 +10,14 @@ typedef uint16_t IP;
 const FLAG FLAG_HALT = 1 << 7;
 const FLAG FLAG_EQ = 1 << 6;
 const FLAG FLAG_GT = 1 << 5;
-const INSTR INSTR_LOAD = 0x08;
-const INSTR INSTR_STORE = 0x09;
-const INSTR INSTR_ADDI = 0x0A;
-const INSTR INSTR_NOP = 0x00;
-const INSTR INSTR_CMP = 0x0B;
-const INSTR INSTR_JE = 0x0C;
-const INSTR INSTR_JLT = 0x0D;
-const INSTR INSTR_JMP = 0x0E;
+#define INSTR_LOAD 0x08
+#define INSTR_STORE 0x09
+#define INSTR_ADDI 0x0A
+#define INSTR_NOP 0x00
+#define INSTR_CMP 0x0B
+#define INSTR_JE 0x0C
+#define INSTR_JLT 0x0D
+#define INSTR_JMP 0x0E
 
 typedef REGISTER (*loader_t)(IP);
 typedef void (*storer_t)(REGISTER, IP);
@@ -111,7 +111,7 @@ struct cpu_state cpu(
 
 uint8_t _debug = 0;
 
-const IP RAMTOP = 511;
+#define RAMTOP 511
 uint8_t ram[RAMTOP + 1];
 
 REGISTER load( IP addr) {
