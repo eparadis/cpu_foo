@@ -13,3 +13,13 @@ echo
 echo "type Z to end example 2. use 'stty cbreak' in your terminal to avoid requiring newlines each character"
 rm -f out && bash ./super_crapsm.sh ex2.asm out && ./main out 
 echo
+
+
+# compile ex3.asm (a binary loader)
+echo "compiling loader"
+bash ./super_crapsm.sh ex3.asm loader
+# send a small program to display a single character into the loader
+# first byte is length, followed by the data
+echo "loading 7 byte program: LOAD 00 05  STORE FF FF  DB AA\n"
+echo -ne \\x07\\x08\\x00\\x05\\x09\\xff\\xff\\xaa | ./main loader
+echo
