@@ -82,4 +82,9 @@ The stack grows downwards, so SP is subtracted from in a PUSH opereation, and ad
 CALL and RET push and pop the IP register to and from the stack, high byte first.
 
 ### P-level mode
+EP holds the top-of-stack address for the PUSH and POP instructions in P-level. It points somewhere in the protected segment
+Otherwise, stack operations are the same as in normal operation.
+
+
+
 
