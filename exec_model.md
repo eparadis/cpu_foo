@@ -1,37 +1,42 @@
 # Execution model
 
 ## Registers:
-A - accumulator
-FLAGS - status flags:
-  HALT
-  EQUAL
-  GREATER-THAN
-  P-LEVEL
-IP - instruction pointer
-EA - copy of A when an exception occurs
-EFLAGS - copy of FLAGS when an exception occurs
-EIP - copy of IP when an exception occurs
+A - accumulator  
+FLAGS - status flags:  
+
+* HALT  
+* EQUAL  
+* GREATER-THAN  
+* P-LEVEL  
+
+IP - instruction pointer  
+EA - copy of A when an exception occurs  
+EFLAGS - copy of FLAGS when an exception occurs  
+EIP - copy of IP when an exception occurs  
 
 ## Modes
-### P-LEVEL flag
-0: normal execution
-1: priviledge mode
 
-Memory map
-0000 P-Level access begins
-0100 Exception handler address
-7FFE P-Level bottom of stack (grows downwards)
-7FFF P-level console IO
-8000 non P-level access begins
-FFFE non P-level bottom of stack (grows downwards)
-FFFF non P-level console IO
+### P-LEVEL flag
+0: normal execution  
+1: priviledge mode  
+
+### Memory map  
+0000 P-Level access begins  
+0100 Exception handler address  
+7FFE P-Level bottom of stack (grows downwards)  
+7FFF P-level console IO  
+8000 non P-level access begins  
+FFFE non P-level bottom of stack (grows downwards)  
+FFFF non P-level console IO  
 
 ### Normal exectuion opcodes and address space
 All opcodes are allowed except IN, OUT, SETF, READF, (things that read EA, EIP, EFLAGS), ???
+
 Read and write memory access is allowed from 8000 to FFFF.
 
 ### Priviledge mode opcodes and address space
 All opcodes are allowed.
+
 Read and write access is allowed from 0000 to FFFF.
 
 ### Switching modes
@@ -60,14 +65,14 @@ Priviledge mode may return to normal mode using the JNORM opcode.
 - JNORM is a jump instruction, so the next two locations in memory are used as the target address.
 - IP is set to this target address and execution continues
 
-*notes*
-If A is set to the original opcode, P-mode can trap unimplemented opcodes and emulate them.
-Proposed PUSH and POP opcodes could be used to detect stack over and under-flows.
-LOAD or STORE accessing illegal memory would be fairly easy to handle like the above.
-JMP (etc) would also be easy to handle in the above case.
-The tricky part would be normal execution reaching the end of its space and "load"ing something outside it.
-Software interrupts seem redundant when you could use an unimplemented opcode to do the same by convention.
-[ref](https://people.cs.pitt.edu/~don/coe1502/current/Unit4a/Unit4a.html)
+### Notes
+- If A is set to the original opcode, P-mode can trap unimplemented opcodes and emulate them.
+- Proposed PUSH and POP opcodes could be used to detect stack over and under-flows.
+- LOAD or STORE accessing illegal memory would be fairly easy to handle like the above.
+- JMP (etc) would also be easy to handle in the above case.
+- The tricky part would be normal execution reaching the end of its space and "load"ing something outside it.
+- Software interrupts seem redundant when you could use an unimplemented opcode to do the same by convention.
+- [ref](https://people.cs.pitt.edu/~don/coe1502/current/Unit4a/Unit4a.html)
 
 ### P-Level and address spaces
 P-LEVEL has access to the bottom half of the address space.
@@ -84,7 +89,3 @@ CALL and RET push and pop the IP register to and from the stack, high byte first
 ### P-level mode
 EP holds the top-of-stack address for the PUSH and POP instructions in P-level. It points somewhere in the protected segment
 Otherwise, stack operations are the same as in normal operation.
-
-
-
-
