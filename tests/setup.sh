@@ -1,6 +1,9 @@
 
 echo "compiling main"
+pushd ../
 gcc -lm -o main main.c
+popd
+cp ../main .
 
 # compile ex3.asm (a binary loader)
 echo "assembling loader"
