@@ -18,6 +18,8 @@ const FLAG FLAG_GT = 1 << 5;
 #define INSTR_JE 0x0C
 #define INSTR_JLT 0x0D
 #define INSTR_JMP 0x0E
+#define INSTR_PUSH 0x0F
+#define INSTR_POP 0x10
 
 typedef REGISTER (*loader_t)(IP);
 typedef void (*storer_t)(REGISTER, IP);
@@ -26,6 +28,7 @@ typedef struct cpu_state {
   FLAG flags;
   IP ip;
   REGISTER rA;
+  IP sp;
 } cpu_state;
 
 IP load_word( loader_t load, IP addr) {
@@ -101,6 +104,18 @@ struct cpu_state cpu(
       new_state.ip = load_word(load, curr_state->ip + 1);
       break;
     }
+    case INSTR_PUSH: {
+      new_state.sp = curr_state->sp - 1;
+      store( curr_state->rA, new_state.sp);
+      new_state.ip = curr_state->ip + 1;
+      break;
+    }
+    case INSTR_POP: {
+      new_state.rA = load( curr_state->sp );
+      new_state.sp = curr_state->sp + 1;
+      new_state.ip = curr_state->ip + 1;
+      break;
+    }
     default: {
       new_state.flags |= FLAG_HALT;
       break;
@@ -137,7 +152,7 @@ void store( REGISTER value, IP addr) {
 
 void debug_state( cpu_state state) {
   if( _debug == 0) return;
-  printf("DEBUG[CPU] flags:%.2x ip:%.4x rA:%.2x\n", state.flags, state.ip, state.rA);
+  printf("DEBUG[CPU] flags:%.2x ip:%.4x sp:%.4x rA:%.2x\n", state.flags, state.ip, state.sp, state.rA);
 }
 
 void debug_dump(uint8_t *block, uint16_t start, uint16_t end) {
@@ -198,6 +213,7 @@ int main( int argc, char *argv[] ) {
   state.ip = 0;
   state.flags = 0;
   state.rA = 0;
+  state.sp = RAMTOP;
 
   while( (state.flags & FLAG_HALT) == 0) {
     debug_state(state);
@@ -209,4 +225,5 @@ int main( int argc, char *argv[] ) {
   debug_dump(ram, 0, 0x27);
   debug_dump(ram, 0x1E, 0x1F);
   debug_dump(ram, 0x100, 0x11F);
+  debug_dump(ram, RAMTOP-16, RAMTOP);
 }

@@ -14,6 +14,8 @@ echo "assembling capital_alphabet"
 bash ../super_crapsm.sh capital_alphabet.asm capital_alphabet.bin
 echo "assembling echo_until_Z"
 bash ../super_crapsm.sh echo_until_Z.asm echo_until_Z.bin
+echo "assembling reverse_line"
+bash ../super_crapsm.sh reverse_line.asm reverse_line.bin
 
 # send a small program to display a single character into the loader
 ./send.py tiny_echo.bin | ./main loader.bin
@@ -23,3 +25,6 @@ bash ../super_crapsm.sh echo_until_Z.asm echo_until_Z.bin
 
 # send some chars and then stop at Z
 echo "zzzWXYZ123" | ./main echo_until_Z.bin
+
+# reverse a line of input
+echo "boxcar" | ./main reverse_line.bin
