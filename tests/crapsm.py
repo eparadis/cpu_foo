@@ -7,8 +7,8 @@ if len(sys.argv) != 3:
   print("usage:", sys.argv[0], "INFILE.asm", "OUTFILE.bin")
   exit(1)
 
-infile = sys.argv[1]
-outfile = sys.argv[2]
+infilename = sys.argv[1]
+outfilename = sys.argv[2]
 
 def convert( word):
   if word == 'DB' or word == 'DW' or word == '':
@@ -19,17 +19,21 @@ def convert( word):
     return (1, opcodes[mnuemonics.index(word)])
   return (1, word)
 
-with open(infile, 'r') as f:
+with open(infilename, 'r') as infile, open(outfilename, 'wb') as outfile:
   position = 0
-  for line in f:
+  for line in infile:
     if line[0] == '#':
       continue
     for word in line.split(' '):
       (length, val) = convert(word.strip())
       if length == 0:
         continue
-      print(position, val)
+      print(val, end=' ')
       position += length
+      outfile.write(bytes.fromhex(val))
+  print()
+
+
 
 #  data = f.read(length)
 #  sys.stdout.buffer.write(bytes([length]))
