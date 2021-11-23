@@ -1,0 +1,37 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+
+if len(sys.argv) != 3:
+  print("usage:", sys.argv[0], "INFILE.asm", "OUTFILE.bin")
+  exit(1)
+
+infile = sys.argv[1]
+outfile = sys.argv[2]
+
+def convert( word):
+  if word == 'DB' or word == 'DW' or word == '':
+    return (0, '')
+  mnuemonics = [ 'LOAD', 'STORE', 'ADDI', 'NOP', 'CMP', 'JE', 'JLT', 'JMP', 'PUSH', 'POP', 'HALT' ]
+  opcodes =    [ '08'  , '09'   , '0A'  , '00' , '0B' , '0C', '0D' , '0E' , '0F'  , '10' , '11'   ]
+  if word in mnuemonics:
+    return (1, opcodes[mnuemonics.index(word)])
+  return (1, word)
+
+with open(infile, 'r') as f:
+  position = 0
+  for line in f:
+    if line[0] == '#':
+      continue
+    for word in line.split(' '):
+      (length, val) = convert(word.strip())
+      if length == 0:
+        continue
+      print(position, val)
+      position += length
+
+#  data = f.read(length)
+#  sys.stdout.buffer.write(bytes([length]))
+#  sys.stdout.buffer.write(data)
+#  f.close()
