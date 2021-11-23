@@ -6,8 +6,8 @@ popd
 cp ../main .
 
 # assemble a binary loader. it takes a single byte length followed by data to place at 0100, then jumps there
-echo "assembling loader"
-./crapsm.py loader.asm loader.bin
+echo "assembling tiny_loader"
+./crapsm.py tiny_loader.asm tiny_loader.bin
 echo "assembling tiny_echo"
 ./crapsm.py tiny_echo.asm tiny_echo.bin
 echo "assembling capital_alphabet"
@@ -18,7 +18,7 @@ echo "assembling reverse_line"
 ./crapsm.py reverse_line.asm reverse_line.bin
 
 # send a small program to display a single character into the loader
-./send.py tiny_echo.bin | ./main loader.bin
+./send.py tiny_echo.bin | ./main tiny_loader.bin
 
 # print the alphabet
 ./main capital_alphabet.bin
