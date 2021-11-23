@@ -10,6 +10,7 @@ typedef uint16_t IP;
 const FLAG FLAG_HALT = 1 << 7;
 const FLAG FLAG_EQ = 1 << 6;
 const FLAG FLAG_GT = 1 << 5;
+const FLAG FLAG_EXCEPTION = 1 << 4;
 #define INSTR_LOAD 0x08
 #define INSTR_STORE 0x09
 #define INSTR_ADDI 0x0A
@@ -20,6 +21,7 @@ const FLAG FLAG_GT = 1 << 5;
 #define INSTR_JMP 0x0E
 #define INSTR_PUSH 0x0F
 #define INSTR_POP 0x10
+#define INSTR_HALT 0x11
 
 typedef REGISTER (*loader_t)(IP);
 typedef void (*storer_t)(REGISTER, IP);
@@ -116,8 +118,16 @@ struct cpu_state cpu(
       new_state.ip = curr_state->ip + 1;
       break;
     }
-    default: {
+    case INSTR_HALT: {
+      new_state.ip = curr_state->ip + 1;
       new_state.flags |= FLAG_HALT;
+      break;
+    }
+    default: {
+      //new_state.flags |= FLAG_HALT;
+      new_state.flags |= FLAG_EXCEPTION;
+      new_state.rA = instruction;
+      new_state.ip = 0x0100;
       break;
     }
   }

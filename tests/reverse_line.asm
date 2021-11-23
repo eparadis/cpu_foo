@@ -13,6 +13,4 @@ CMP 00
 JE 00 1C
 STORE FF FF
 JMP 00 10
-
-# illegal opcode to cause halt
-DB AA
+HALT
