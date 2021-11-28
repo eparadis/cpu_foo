@@ -13,8 +13,8 @@ outfilename = sys.argv[2]
 def convert( word):
   if word == 'DB' or word == 'DW' or word == '':
     return (0, '')
-  mnuemonics = [ 'LOAD', 'STORE', 'ADDI', 'NOP', 'CMP', 'JE', 'JLT', 'JMP', 'PUSH', 'POP', 'HALT' ]
-  opcodes =    [ '08'  , '09'   , '0A'  , '00' , '0B' , '0C', '0D' , '0E' , '0F'  , '10' , '11'   ]
+  mnuemonics = [ 'LOAD', 'STORE', 'ADDI', 'NOP', 'CMP', 'JE', 'JLT', 'JMP', 'PUSH', 'POP', 'HALT', 'SHIFTL']
+  opcodes =    [ '08'  , '09'   , '0A'  , '00' , '0B' , '0C', '0D' , '0E' , '0F'  , '10' , '11'  , '12' ]
   if word in mnuemonics:
     return (1, opcodes[mnuemonics.index(word)])
   return (1, word)

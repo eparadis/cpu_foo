@@ -16,6 +16,8 @@ echo "assembling echo_until_Z"
 ./crapsm.py echo_until_Z.asm echo_until_Z.bin
 echo "assembling reverse_line"
 ./crapsm.py reverse_line.asm reverse_line.bin
+echo "assembling shift_fun"
+./crapsm.py shift_fun.asm shift_fun.bin
 
 # send a small program to display a single character into the loader
 ./send.py tiny_echo.bin | ./main tiny_loader.bin
@@ -28,3 +30,6 @@ echo "zzzWXYZ123" | ./main echo_until_Z.bin
 
 # reverse a line of input
 echo "boxcar" | ./main reverse_line.bin
+
+# print out characters that have been SHIFTL'd
+./main shift_fun.bin
