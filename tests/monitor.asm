@@ -3,16 +3,21 @@
 # jump to start
 JMP 01 xx
 # constant: prompt 0x0103
+:prompt
 DB 3E
 # JMP command we'll modify to use the G command 0x0104 05 06
+:go_vector
 JMP 00 00
 # variable: cursor 0x0107 08
+:cursor_hi
 DB 00
+:cursor_hi
 DB 00
 
 # start
+:start
 # print prompt
-LOAD 01 03
+LOAD prompt
 STORE FF FF
 
 # get command
@@ -24,10 +29,11 @@ JE 01 xx
 CMP 4C
 JE 01 xx
 # otherwise jump back to start to get command again
-JMP 00 04
+JMP start
 
 # 'G' command - "Go"
 # get four characters
+:g_commmand
 LOAD FF FF
 PUSH
 LOAD FF FF
@@ -45,11 +51,12 @@ STORE 01 05
 POP
 STORE 01 06
 # JMP to the vector we just set
-JMP 01 04
+JMP go_vector
 
 
 # 'L' command - "set cursor Location"
 # get four characters
+:l_command
 LOAD FF FF
 PUSH
 LOAD FF FF
@@ -70,6 +77,7 @@ JMP 01 00
 
 # 'W' command - "Write a byte at cursor and increment cursor"
 # push two garbage values we'll discard
+:w_command
 PUSH
 PUSH
 # get two characters
