@@ -23,6 +23,7 @@ const FLAG FLAG_EXCEPTION = 1 << 4;
 #define INSTR_POP 0x10
 #define INSTR_HALT 0x11
 #define INSTR_SHIFTL 0x12
+#define INSTR_ADD 0x13
 
 typedef REGISTER (*loader_t)(IP);
 typedef void (*storer_t)(REGISTER, IP);
@@ -127,6 +128,13 @@ struct cpu_state cpu(
     case INSTR_SHIFTL: {
       new_state.ip = curr_state->ip + 1;
       new_state.rA = curr_state->rA << 1;
+      break;
+    }
+    case INSTR_ADD: {
+      IP addr = load_word(load, curr_state->ip + 1);
+      REGISTER data = load( addr);
+      new_state.rA = curr_state->rA + data;
+      new_state.ip = curr_state->ip + 3;
       break;
     }
     default: {

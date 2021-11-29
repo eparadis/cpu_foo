@@ -18,6 +18,9 @@ echo "assembling reverse_line"
 ./crapsm.py reverse_line.asm reverse_line.bin
 echo "assembling shift_fun"
 ./crapsm.py shift_fun.asm shift_fun.bin
+echo "assembling make_caps"
+./crapsm.py make_caps.asm make_caps.bin
+
 
 # send a small program to display a single character into the loader
 ./send.py tiny_echo.bin | ./main tiny_loader.bin
@@ -33,3 +36,6 @@ echo "boxcar" | ./main reverse_line.bin
 
 # print out characters that have been SHIFTL'd
 ./main shift_fun.bin
+
+# make the string capital letters
+echo "boxcar" | ./main make_caps.bin
