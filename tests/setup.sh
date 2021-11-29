@@ -20,6 +20,8 @@ echo "assembling shift_fun"
 ./crapsm.py shift_fun.asm shift_fun.bin
 echo "assembling make_caps"
 ./crapsm.py make_caps.asm make_caps.bin
+echo "assembling subroutines"
+./crapsm.py subroutines.asm subroutines.bin
 
 
 # send a small program to display a single character into the loader
@@ -39,3 +41,6 @@ echo "boxcar" | ./main reverse_line.bin
 
 # make the string capital letters
 echo "boxcar" | ./main make_caps.bin
+
+# print a string of *
+./main subroutines.bin

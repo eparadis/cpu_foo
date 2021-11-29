@@ -24,6 +24,8 @@ const FLAG FLAG_EXCEPTION = 1 << 4;
 #define INSTR_HALT 0x11
 #define INSTR_SHIFTL 0x12
 #define INSTR_ADD 0x13
+#define INSTR_CALL 0x14
+#define INSTR_RET 0x15
 
 typedef REGISTER (*loader_t)(IP);
 typedef void (*storer_t)(REGISTER, IP);
@@ -39,6 +41,13 @@ IP load_word( loader_t load, IP addr) {
   REGISTER upper_addr = load( addr);
   REGISTER lower_addr = load( addr + 1);
   return upper_addr << 8 | lower_addr;
+}
+
+void store_word( storer_t store, IP val, IP addr) {
+  REGISTER val_lo = val & 0x00FF;
+  REGISTER val_hi = (val & 0xFF00) >> 8;
+  store(val_hi, addr);
+  store(val_lo, addr + 1);
 }
 
 struct cpu_state cpu(
@@ -135,6 +144,19 @@ struct cpu_state cpu(
       REGISTER data = load( addr);
       new_state.rA = curr_state->rA + data;
       new_state.ip = curr_state->ip + 3;
+      break;
+    }
+    case INSTR_CALL: {
+      // push the addr of the _next_ instruction
+      new_state.sp = curr_state->sp - 2;
+      store_word(store, curr_state->ip + 3, new_state.sp);
+      // jump to the given address
+      new_state.ip = load_word(load, curr_state->ip + 1);
+      break;
+    }
+    case INSTR_RET: {
+      new_state.ip = load_word(load, curr_state->sp);
+      new_state.sp = curr_state->sp + 2;
       break;
     }
     default: {
