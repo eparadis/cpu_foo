@@ -1,7 +1,9 @@
 # echo until capital-Z
+:top
 LOAD FF FF
 STORE FF FF
 CMP 5A
-JE 00 0E
-JMP 00 00
+JE end 
+JMP top
+:end
 HALT

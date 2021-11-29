@@ -1,11 +1,15 @@
 # print capital A thru Z
-LOAD 00 0E
+LOAD starting_char
+:top
 ADDI 01
 STORE FF FF
 CMP 5A
-JLT 00 03 
+JLT top
 HALT
-DW 40 34
+:starting_char
+DB 40
+DB 34
+
 # comment
 
 # ^^ blank line

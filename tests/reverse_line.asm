@@ -6,13 +6,14 @@ LOAD FF FF
 STORE FF FF
 PUSH
 CMP 0A
-JE 00 10
+JE next
 JMP top
 # pop off stack until a null
 :next
 POP
 CMP 00
-JE 00 1C
+JE end
 STORE FF FF
 JMP next
+:end
 HALT

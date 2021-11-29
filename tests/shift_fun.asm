@@ -1,12 +1,13 @@
 # shift_fun.asm
 # test out the SHIFTL instruction
 # jump over our labels
-JMP 00 04
+JMP start 
 # stored constant 
 :letter
 DB 7E
 
 # print a stored value
+:start
 LOAD letter
 STORE FF FF
 # shift, subtract 127, and print it a few times
