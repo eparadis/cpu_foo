@@ -14,7 +14,11 @@ JMP start
 DB 3E
 # JMP command we'll modify to use the G command 0x0104 05 06
 :go_vector
-JMP 00 00
+JMP
+:go_vector_hi
+DB 00
+:go_vector_lo
+DB 00
 # variable: cursor 0x0107 08
 :cursor_hi
 DB 00
@@ -56,10 +60,10 @@ PUSH
 CALL hex_converter
 # top of the stack is high byte of value, modify our jump vector
 POP
-STORE 01 05
+STORE go_vector_hi
 # low byte
 POP
-STORE 01 06
+STORE go_vector_lo
 # JMP to the vector we just set
 JMP go_vector
 
