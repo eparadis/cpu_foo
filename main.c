@@ -35,6 +35,7 @@ typedef struct cpu_state {
   IP ip;
   REGISTER rA;
   IP sp;
+  IP ds;
 } cpu_state;
 
 IP load_word( loader_t load, IP addr) {
@@ -58,6 +59,12 @@ struct cpu_state cpu(
   storer_t io_write 
 ) {
   cpu_state new_state;
+  new_state.flags = curr_state->flags;
+  new_state.ip = curr_state->ip;
+  new_state.rA = curr_state->rA;
+  new_state.sp = curr_state->sp;
+  new_state.ds = curr_state->ds;
+
   INSTR instruction = load( curr_state->ip);
   switch( instruction) {
     case INSTR_LOAD: {
@@ -118,14 +125,14 @@ struct cpu_state cpu(
       break;
     }
     case INSTR_PUSH: {
-      new_state.sp = curr_state->sp - 1;
-      store( curr_state->rA, new_state.sp);
+      new_state.ds = curr_state->ds - 1;
+      store( curr_state->rA, new_state.ds);
       new_state.ip = curr_state->ip + 1;
       break;
     }
     case INSTR_POP: {
-      new_state.rA = load( curr_state->sp );
-      new_state.sp = curr_state->sp + 1;
+      new_state.rA = load( curr_state->ds );
+      new_state.ds = curr_state->ds + 1;
       new_state.ip = curr_state->ip + 1;
       break;
     }
@@ -260,6 +267,7 @@ int main( int argc, char *argv[] ) {
   state.flags = 0;
   state.rA = 0;
   state.sp = RAMTOP;
+  state.ds = RAMTOP - 32;
 
   while( (state.flags & FLAG_HALT) == 0) {
     debug_state(state);
