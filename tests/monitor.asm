@@ -1,5 +1,12 @@
 # monitor.asm - should be loaded at 0x0100 (the exception vector)
 
+# commands:
+# (xxxx is a four digit uppercase hex number)
+# (yy is a two digit uppercase hex number)
+# Gxxxx - jump to location
+# Lxxxx - set the cursor to xxxx
+# Wyy - write a byte at the current cursor location and increment the cursor
+
 # jump to start
 JMP start
 # constant: prompt 0x0103
@@ -78,9 +85,13 @@ STORE cursor_lo
 # jump back for the next command
 JMP start
 
+:char_0
+DB 30
+
 # 'W' command - "Write a byte at cursor and increment cursor"
 # push two garbage values we'll discard
 :w_command
+LOAD char_0
 PUSH
 PUSH
 # get two characters
