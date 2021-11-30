@@ -121,15 +121,25 @@ STORE
 00
 :_w_store_lo
 00 
+# now increment the cursor
+# TODO we don't have 16 bit math, so we can only work inside 256 byte segments before having to set the cursor again
+LOAD cursor_lo
+ADDI 01
+STORE cursor_lo
 # all done
 JMP start 
 
 # hex location converter -- takes four ascii hexadecimal characters on the stack and pushes their 16bit value on the stack
-# characters entered: WXYZ (WX top byte, YZ bottom byte)
-# on stack like: (top) W X Y Z (bottom)
+# characters entered: WXYZ (WX hi byte, YZ lo byte)
+# on stack like: (top) Z Y X W (bottom)
 # result: (top) jj kk (bottom) (jj high byte, kk low byte)
 :hex_converter
 # convert top of stack from ascii to hex
+CALL ascii_to_hex
+POP
+# put it in a temp location
+STORE _hc_tmp_lo
+# convert another
 CALL ascii_to_hex
 POP
 # multiply it by 16
@@ -137,17 +147,17 @@ SHIFTL
 SHIFTL
 SHIFTL
 SHIFTL
-# put it in a temp location
-STORE _hc_tmp
-# convert another
+# add in the top hex character
+ADD _hc_tmp_lo
+# store back in the temp location
+STORE _hc_tmp_lo
+# now convert the high byte
+# convert
 CALL ascii_to_hex
 POP
-# add in the top hex character
-ADD _hc_tmp
-# store back in the temp location
-STORE _hc_tmp
-# now convert the low byte
-# convert
+# put in another tmp location
+STORE _hc_tmp_hi
+# convert last byte
 CALL ascii_to_hex
 POP
 # multiply by 16
@@ -155,24 +165,20 @@ SHIFTL
 SHIFTL
 SHIFTL
 SHIFTL
-# put in a tmp2 location
-STORE _hc_tmp2
-# convert last byte
-CALL ascii_to_hex
-POP
 # add in top hex character
-ADD _hc_tmp2
-# push because we return the low byte last
+ADD _hc_tmp_hi
+# push low byte first
+LOAD _hc_tmp_lo 
 PUSH
 # fetch the high byte and put it on the stack
-LOAD _hc_tmp
+LOAD _hc_tmp_hi
 PUSH
 # we're done, return
 RET
 
-:_hc_tmp
+:_hc_tmp_hi
 DB 00
-:_hc_tmp2
+:_hc_tmp_lo
 DB 00
 
 # hex character converter -- takes an acii hexadecimal character on the stack and pushes it's 4 bit value
@@ -180,17 +186,19 @@ DB 00
 # 'A' -> 0x41
 :ascii_to_hex
 # if the value is greater than 0x39 ('9'), subtract 55 (0x37)
+POP
 CMP 40
-JLT _a2h_alpha 
+# if it's less than 0x40, it's a number
+JLT _a2h_num
+# else it's a letter
 # -55 => 0xC9 
 ADDI C9
-JMP _a2h_done
+PUSH
+RET
 # otherwise subtract 48 (0x30)
-:_a2h_alpha
+:_a2h_num
 # -48 => 0xD0
 ADDI D0
-# we're done
-:_a2h_done
 PUSH
 RET
 
