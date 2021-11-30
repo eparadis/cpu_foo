@@ -205,7 +205,7 @@ void store( REGISTER value, IP addr) {
 
 void debug_state( cpu_state state) {
   if( _debug == 0) return;
-  printf("DEBUG[CPU] flags:%.2x ip:%.4x sp:%.4x rA:%.2x\n", state.flags, state.ip, state.sp, state.rA);
+  printf("DEBUG[CPU] flags:%.2x ip:%.4x sp:%.4x ds:%.4x rA:%.2x\n", state.flags, state.ip, state.sp, state.ds, state.rA);
 }
 
 void debug_dump(uint8_t *block, uint16_t start, uint16_t end) {
@@ -267,7 +267,7 @@ int main( int argc, char *argv[] ) {
   state.flags = 0;
   state.rA = 0;
   state.sp = RAMTOP;
-  state.ds = RAMTOP - 32;
+  state.ds = RAMTOP - 64;
 
   while( (state.flags & FLAG_HALT) == 0) {
     debug_state(state);
