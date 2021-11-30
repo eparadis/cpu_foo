@@ -22,7 +22,8 @@ echo "assembling make_caps"
 ./crapsm.py make_caps.asm make_caps.bin
 echo "assembling subroutines"
 ./crapsm.py subroutines.asm subroutines.bin
-
+echo "assembling monitor"
+./crapsm.py monitor.asm monitor.bin
 
 # send a small program to display a single character into the loader
 ./send.py tiny_echo.bin | ./main tiny_loader.bin
@@ -44,3 +45,6 @@ echo "boxcar" | ./main make_caps.bin
 
 # print a string of *
 ./main subroutines.bin
+
+# load the monitor and use it to write a program that prints a '#'
+echo "L0100 W23 W08 W01 W00 W09 WFF WFF W11 G0101" | ./main monitor.bin
