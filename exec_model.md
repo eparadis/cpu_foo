@@ -1,5 +1,38 @@
 # Execution model
 
+# Second Take
+
+## Description
+
+Execution starts at 0x0000 flag P set. When set, the cpu is in Priviledged or Supervisor mode.
+Certain instructions become invalid when P is cleared.
+There is a window of memory starting at 0x0000 whose upper bound can only be set when P is set.
+Any memory access inside this window when P is cleared will cause a Trap or Exception.
+When an Exception or Trap occurs, P is set, E is set, and execution continues at the Exception vector address.
+The Exception vector address (EVA) can only be set when P is set.
+
+## Instructions valid ONLY when P is set
+- `SPMW yy` - set priviledged memory window upper bound to 256 byte segment number _yy_
+- `SEVA xxxx` - set exception vector address
+- `JEX xxxx` - jump if exception flag set
+- `JCPF xxxx` - jump and clear P flag
+- `SDS xxxx` - set DS register
+- `SSP xxxx` - set SP register
+- `CEF` - clear exception flag
+
+## Sequence
+- boot
+- set priv memory window
+- set exception vector address
+- set DS and SP
+- copy monitor (?) into exception handler
+- jump to monitor
+ - monitor loads user code
+ - monitor JCPF to user code
+- any exception returns to monitor
+
+# First Take
+
 ## Registers:
 A - accumulator  
 FLAGS - status flags:  
@@ -7,9 +40,12 @@ FLAGS - status flags:
 * HALT  
 * EQUAL  
 * GREATER-THAN  
-* P-LEVEL  
+* P-LEVEL 
+* EXCEPTION
 
 IP - instruction pointer  
+SP - call stack pointer
+DS - data stack pointer
 EA - copy of A when an exception occurs  
 EFLAGS - copy of FLAGS when an exception occurs  
 EIP - copy of IP when an exception occurs  
@@ -47,8 +83,8 @@ Priviledge mode is entered in the following ways:
 - execution of an illegal opcode
 - illegal memory access
 - ??? division by zero (no div opcode yet)
-- ??? stack underflow (no stack yet)
-- ??? stack overflow (no stack yet)
+- ??? stack underflow
+- ??? stack overflow
 - ??? hardware interrupt (no hardware interrupt yet)
 - ??? reading or writing to a reserved port (no ports yet)
 
