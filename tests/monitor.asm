@@ -25,6 +25,9 @@ DB 00
 :cursor_lo
 DB 00
 
+:char_newline
+DB 0A
+
 # start
 :start
 # print prompt
@@ -64,6 +67,9 @@ STORE go_vector_hi
 # low byte
 POP
 STORE go_vector_lo
+# print a newline
+LOAD char_newline
+STORE FF FF
 # JMP to the vector we just set
 JMP go_vector
 
@@ -86,6 +92,9 @@ POP
 STORE cursor_hi
 POP
 STORE cursor_lo
+# print a newline
+LOAD char_newline
+STORE FF FF
 # jump back for the next command
 JMP start
 
@@ -126,6 +135,9 @@ STORE
 LOAD cursor_lo
 ADDI 01
 STORE cursor_lo
+# print a newline
+LOAD char_newline
+STORE FF FF
 # all done
 JMP start 
 
