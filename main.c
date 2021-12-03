@@ -195,7 +195,7 @@ struct cpu_state cpu(
 
 uint8_t _debug = 0;
 
-#define RAMTOP 511
+IP RAMTOP;
 uint8_t *ram;
 
 REGISTER load( IP addr) {
@@ -248,17 +248,35 @@ void debug_dump(uint8_t *block, uint16_t start, uint16_t end) {
 
 int main( int argc, char *argv[] ) {
   int opt;
-  while ((opt = getopt(argc, argv, "d")) != -1) {
+  char *rval = NULL;
+  int num_bytes = 512;
+  while ((opt = getopt(argc, argv, "dr:")) != -1) {
     switch (opt) {
       case 'd': _debug = 1; break;
+      case 'r': {
+        rval = optarg;
+        break;
+      }
       default:
-        fprintf(stderr, "usage: %s [-d] [file.bin]\n", argv[0]);
+        fprintf(stderr, "usage: %s [-d] [-r BYTES] [file.bin]\n", argv[0]);
         return 1;
     }
   }
   if( optind >= argc) {
     fprintf(stderr, "error: ram image file required\n");
     return 1;
+  }
+  if( rval != NULL ) {
+    num_bytes = atoi(rval);
+    if(num_bytes < 8 || num_bytes > 65536) {
+      fprintf(stderr, "Specified RAM size \"%s\" is invalid. RAM size must be between 8 and 65536 bytes\n", rval);
+      return 1;
+    }
+  }
+  RAMTOP = num_bytes - 1;
+
+  if(_debug) {
+    printf("DEBUG[MAIN] Using %d bytes of RAM\n", RAMTOP + 1);
   }
 
   ram = (REGISTER *) calloc(RAMTOP + 1, (sizeof(REGISTER)));

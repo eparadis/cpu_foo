@@ -36,7 +36,7 @@ echo "assembling monitor"
 echo "zzzWXYZ123" | ./main echo_until_Z.bin
 
 # reverse a line of input
-echo "boxcar" | ./main reverse_line.bin
+echo "boxcar" | ./main -r 512 reverse_line.bin
 
 # print out characters that have been SHIFTL'd
 ./main shift_fun.bin
@@ -45,7 +45,7 @@ echo "boxcar" | ./main reverse_line.bin
 echo "boxcar" | ./main make_caps.bin
 
 # print a string of *
-./main subroutines.bin
+./main -r 512 subroutines.bin
 
 # load the monitor and use it to write a program that prints a '#'
-echo "L0100 W23 W08 W01 W00 W09 WFF WFF W11 G0101" | ./main monitor.bin
+echo "L0100 W23 W08 W01 W00 W09 WFF WFF W11 G0101" | ./main -r 512 monitor.bin
