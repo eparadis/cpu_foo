@@ -11,6 +11,7 @@ const FLAG FLAG_HALT = 1 << 7;
 const FLAG FLAG_EQ = 1 << 6;
 const FLAG FLAG_GT = 1 << 5;
 const FLAG FLAG_EXCEPTION = 1 << 4;
+const FLAG FLAG_PMODE = 1 << 3;
 #define INSTR_LOAD 0x08
 #define INSTR_STORE 0x09
 #define INSTR_ADDI 0x0A
@@ -26,6 +27,8 @@ const FLAG FLAG_EXCEPTION = 1 << 4;
 #define INSTR_ADD 0x13
 #define INSTR_CALL 0x14
 #define INSTR_RET 0x15
+#define INSTR_SDS 0x16
+#define INSTR_SSP 0x17
 
 typedef REGISTER (*loader_t)(IP);
 typedef void (*storer_t)(REGISTER, IP);
@@ -166,6 +169,18 @@ struct cpu_state cpu(
       new_state.sp = curr_state->sp + 2;
       break;
     }
+    case INSTR_SDS: {
+      if( curr_state->flags & FLAG_PMODE)
+        new_state.ds = load_word(load, curr_state->ip + 1);
+      new_state.ip = curr_state->ip + 3;
+      break;
+    }
+    case INSTR_SSP: {
+      if( curr_state->flags & FLAG_PMODE)
+        new_state.sp = load_word(load, curr_state->ip + 1);
+      new_state.ip = curr_state->ip + 3;
+      break;
+    }
     default: {
       //new_state.flags |= FLAG_HALT;
       new_state.flags |= FLAG_EXCEPTION;
@@ -264,10 +279,10 @@ int main( int argc, char *argv[] ) {
   struct cpu_state next_state;
 
   state.ip = 0;
-  state.flags = 0;
+  state.flags = 0 | FLAG_PMODE;
   state.rA = 0;
-  state.sp = RAMTOP;
-  state.ds = RAMTOP - 64;
+  state.sp = 0; 
+  state.ds = 0;
 
   while( (state.flags & FLAG_HALT) == 0) {
     debug_state(state);

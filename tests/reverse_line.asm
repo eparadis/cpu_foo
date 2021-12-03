@@ -1,3 +1,6 @@
+# reverse_line.asm - accept a line of text and then echo it in reverse
+# set up the data stack
+SDS 01 FF
 # push a null as a marker
 PUSH
 # echo until new line

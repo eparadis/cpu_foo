@@ -1,5 +1,9 @@
 # subroutines.asm - use CALL and RET a bunch to print something
 
+# set up the stacks
+SSP 01 FF
+SDS 01 DF
+
 CALL newline
 CALL some_stars
 HALT

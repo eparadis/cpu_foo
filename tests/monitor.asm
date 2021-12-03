@@ -7,6 +7,10 @@
 # Lxxxx - set the cursor to xxxx
 # Wyy - write a byte at the current cursor location and increment the cursor
 
+# set up stacks
+SSP 01 FF
+SDS 01 DF
+
 # jump to start
 JMP start
 # constant: prompt 0x0103
