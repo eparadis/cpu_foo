@@ -4,7 +4,7 @@ echo "compiling main"
 pushd ../
 gcc -lm -o main main.c
 popd
-ln -s ../main main
+ln -f -s ../main main
 
 # assemble a binary loader. it takes a single byte length followed by data to place at 0100, then jumps there
 echo "assembling tiny_loader"
