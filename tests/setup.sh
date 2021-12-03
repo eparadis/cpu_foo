@@ -1,3 +1,4 @@
+#!/usr/bin/env bash -e
 
 echo "compiling main"
 pushd ../
