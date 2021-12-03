@@ -25,6 +25,8 @@ echo "assembling subroutines"
 ./crapsm.py subroutines.asm subroutines.bin
 echo "assembling monitor"
 ./crapsm.py monitor.asm monitor.bin
+echo "assembling exception_vector"
+./crapsm.py exception_vector.asm exception_vector.bin
 
 # send a small program to display a single character into the loader
 ./send.py tiny_echo.bin | ./main tiny_loader.bin
@@ -49,3 +51,6 @@ echo "boxcar" | ./main make_caps.bin
 
 # load the monitor and use it to write a program that prints a '#'
 echo "L0100 W23 W08 W01 W00 W09 WFF WFF W11 G0101" | ./main -r 512 monitor.bin
+
+# print some characters and then try to execute an illegal instruction
+./main exception_vector.bin
