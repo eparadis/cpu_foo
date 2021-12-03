@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 typedef uint8_t FLAG;
 typedef uint8_t INSTR;
@@ -195,7 +196,7 @@ struct cpu_state cpu(
 uint8_t _debug = 0;
 
 #define RAMTOP 511
-uint8_t ram[RAMTOP + 1];
+uint8_t *ram;
 
 REGISTER load( IP addr) {
   if( addr == 0xFFFF) {
@@ -245,12 +246,6 @@ void debug_dump(uint8_t *block, uint16_t start, uint16_t end) {
   }
 }
 
-void zero_addresses(uint8_t *block, uint16_t start, uint16_t end) {
-  for( uint16_t i = start; i <= end; i += 1) {
-    block[i] = 0;
-  }
-}
-
 int main( int argc, char *argv[] ) {
   int opt;
   while ((opt = getopt(argc, argv, "d")) != -1) {
@@ -266,7 +261,11 @@ int main( int argc, char *argv[] ) {
     return 1;
   }
 
-  zero_addresses(ram, 0, RAMTOP);
+  ram = (REGISTER *) calloc(RAMTOP + 1, (sizeof(REGISTER)));
+  if( ram == NULL) {
+    fprintf(stderr, "Could not allocate memory for RAM\n");
+    return 1;
+  }
 
   IP c = 0;
   FILE *stream = fopen(argv[optind], "r");
