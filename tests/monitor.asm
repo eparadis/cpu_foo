@@ -39,7 +39,11 @@ LOAD prompt
 STORE FF FF
 
 # get command
+:get_command
 LOAD FF FF
+# is it a space? ignore it and get another
+CMP 20
+JE get_command
 # is it 'G' ? jump to handler
 CMP 47
 JE g_command
