@@ -31,9 +31,10 @@ const FLAG FLAG_PMODE = 1 << 3;
 #define INSTR_SDS 0x16
 #define INSTR_SSP 0x17
 #define INSTR_SEVA 0x18
+#define INSTR_SPMW 0x19
 
-typedef REGISTER (*loader_t)(IP);
-typedef void (*storer_t)(REGISTER, IP);
+typedef REGISTER (*loader_t)(IP, cpu_state);
+typedef void (*storer_t)(REGISTER, IP, cpu_state);
 
 typedef struct cpu_state {
   FLAG flags;
@@ -42,19 +43,20 @@ typedef struct cpu_state {
   IP sp;
   IP ds;
   IP eva;
+  REGISTER pmw;
 } cpu_state;
 
-IP load_word( loader_t load, IP addr) {
-  REGISTER upper_addr = load( addr);
-  REGISTER lower_addr = load( addr + 1);
+IP load_word( loader_t load, IP addr, cpu_state state) {
+  REGISTER upper_addr = load( addr, state);
+  REGISTER lower_addr = load( addr + 1, state);
   return upper_addr << 8 | lower_addr;
 }
 
-void store_word( storer_t store, IP val, IP addr) {
+void store_word( storer_t store, IP val, IP addr, cpu_state state) {
   REGISTER val_lo = val & 0x00FF;
   REGISTER val_hi = (val & 0xFF00) >> 8;
-  store(val_hi, addr);
-  store(val_lo, addr + 1);
+  store(val_hi, addr, state);
+  store(val_lo, addr + 1, state);
 }
 
 struct cpu_state cpu(
@@ -71,6 +73,7 @@ struct cpu_state cpu(
   new_state.sp = curr_state->sp;
   new_state.ds = curr_state->ds;
   new_state.eva = curr_state->eva;
+  new_state.pmw = curr_state->pmw;
 
   INSTR instruction = load( curr_state->ip);
   switch( instruction) {
@@ -191,6 +194,12 @@ struct cpu_state cpu(
       new_state.ip = curr_state->ip + 3;
       break;
     }
+    case INSTR_SPMW: {
+      if( curr_state->flags & FLAG_PMODE)
+        new_state.pmw = load(curr_state->ip + 1);
+      new_state.ip = curr_state->ip + 2;
+      break;
+    }
     default: {
       // throw an exception
       new_state.flags |= FLAG_EXCEPTION;
@@ -309,6 +318,8 @@ int main( int argc, char *argv[] ) {
   state.rA = 0;
   state.sp = 0; 
   state.ds = 0;
+  state.eva = 0;
+  state.pmw = 0xFF;
 
   while( (state.flags & FLAG_HALT) == 0) {
     debug_state(state);
