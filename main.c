@@ -30,6 +30,7 @@ const FLAG FLAG_PMODE = 1 << 3;
 #define INSTR_RET 0x15
 #define INSTR_SDS 0x16
 #define INSTR_SSP 0x17
+#define INSTR_SEVA 0x18
 
 typedef REGISTER (*loader_t)(IP);
 typedef void (*storer_t)(REGISTER, IP);
@@ -40,6 +41,7 @@ typedef struct cpu_state {
   REGISTER rA;
   IP sp;
   IP ds;
+  IP eva;
 } cpu_state;
 
 IP load_word( loader_t load, IP addr) {
@@ -68,6 +70,7 @@ struct cpu_state cpu(
   new_state.rA = curr_state->rA;
   new_state.sp = curr_state->sp;
   new_state.ds = curr_state->ds;
+  new_state.eva = curr_state->eva;
 
   INSTR instruction = load( curr_state->ip);
   switch( instruction) {
@@ -182,11 +185,17 @@ struct cpu_state cpu(
       new_state.ip = curr_state->ip + 3;
       break;
     }
+    case INSTR_SEVA: {
+      if( curr_state->flags & FLAG_PMODE)
+        new_state.eva = load_word(load, curr_state->ip + 1);
+      new_state.ip = curr_state->ip + 3;
+      break;
+    }
     default: {
-      //new_state.flags |= FLAG_HALT;
+      // throw an exception
       new_state.flags |= FLAG_EXCEPTION;
       new_state.rA = instruction;
-      new_state.ip = 0x0100;
+      new_state.ip = curr_state->eva;
       break;
     }
   }
