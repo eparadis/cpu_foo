@@ -33,8 +33,8 @@ const FLAG FLAG_PMODE = 1 << 3;
 #define INSTR_SEVA 0x18
 #define INSTR_SPMW 0x19
 
-typedef REGISTER (*loader_t)(IP, cpu_state);
-typedef void (*storer_t)(REGISTER, IP, cpu_state);
+typedef REGISTER (*loader_t)(IP);
+typedef void (*storer_t)(REGISTER, IP);
 
 typedef struct cpu_state {
   FLAG flags;
@@ -46,17 +46,17 @@ typedef struct cpu_state {
   REGISTER pmw;
 } cpu_state;
 
-IP load_word( loader_t load, IP addr, cpu_state state) {
-  REGISTER upper_addr = load( addr, state);
-  REGISTER lower_addr = load( addr + 1, state);
+IP load_word( loader_t load, IP addr) {
+  REGISTER upper_addr = load( addr);
+  REGISTER lower_addr = load( addr + 1);
   return upper_addr << 8 | lower_addr;
 }
 
-void store_word( storer_t store, IP val, IP addr, cpu_state state) {
+void store_word( storer_t store, IP val, IP addr) {
   REGISTER val_lo = val & 0x00FF;
   REGISTER val_hi = (val & 0xFF00) >> 8;
-  store(val_hi, addr, state);
-  store(val_lo, addr + 1, state);
+  store(val_hi, addr);
+  store(val_lo, addr + 1);
 }
 
 struct cpu_state cpu(
