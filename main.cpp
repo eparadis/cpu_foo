@@ -6,7 +6,7 @@
 typedef uint8_t FLAG;
 typedef uint8_t INSTR;
 typedef uint8_t REGISTER;
-typedef uint16_t IP;
+typedef uint16_t POINTER;
 
 const FLAG FLAG_HALT = 1 << 7;
 const FLAG FLAG_EQ = 1 << 6;
@@ -33,31 +33,57 @@ const FLAG FLAG_PMODE = 1 << 3;
 #define INSTR_SEVA 0x18
 #define INSTR_SPMW 0x19
 
-typedef REGISTER (*loader_t)(IP);
-typedef void (*storer_t)(REGISTER, IP);
+typedef REGISTER (*loader_t)(POINTER);
+typedef void (*storer_t)(REGISTER, POINTER);
 
 typedef struct cpu_state {
   FLAG flags;
-  IP ip;
+  POINTER ip;
   REGISTER rA;
-  IP sp;
-  IP ds;
-  IP eva;
+  POINTER sp;
+  POINTER ds;
+  POINTER eva;
   REGISTER pmw;
 } cpu_state;
 
-IP load_word( loader_t load, IP addr) {
+POINTER load_word( loader_t load, POINTER addr) {
   REGISTER upper_addr = load( addr);
   REGISTER lower_addr = load( addr + 1);
   return upper_addr << 8 | lower_addr;
 }
 
-void store_word( storer_t store, IP val, IP addr) {
+void store_word( storer_t store, POINTER val, POINTER addr) {
   REGISTER val_lo = val & 0x00FF;
   REGISTER val_hi = (val & 0xFF00) >> 8;
   store(val_hi, addr);
   store(val_lo, addr + 1);
 }
+
+int illegal_memory_access(POINTER addr) {
+  return 0; // TODO
+}
+
+void raise_exception(cpu_state *state) {
+  // TODO
+}
+
+class GuardedAddress {
+  public:
+    GuardedAddress(cpu_state *state) {
+    }
+
+    void copyFrom(POINTER addr) {
+    }
+
+    bool exception() {
+    }
+
+    REGISTER value() {
+    }
+
+  private:
+    cpu_state *state;
+};
 
 struct cpu_state cpu(
   cpu_state *curr_state,
@@ -75,19 +101,58 @@ struct cpu_state cpu(
   new_state.eva = curr_state->eva;
   new_state.pmw = curr_state->pmw;
 
+  if( illegal_memory_access(curr_state->ip)) {
+    raise_exception(&new_state);
+    return new_state;
+  }
   INSTR instruction = load( curr_state->ip);
   switch( instruction) {
     case INSTR_LOAD: {
-      REGISTER upper_addr = load( curr_state->ip + 1);
-      REGISTER lower_addr = load( curr_state->ip + 2);
-      new_state.rA = load( upper_addr << 8 | lower_addr);
+      // new new way, w/o literal address storage class
+      GuardedMemoryAccessWord addr(curr_state, curr_state->ip + 1);
+      if( addr.exception())
+        return addr.modifiedState();
+      GuardedMemoryAccessByte value(curr_state, addr.result());
+      if( value.exception())
+        return value.modifiedState();
+      new_state.rA = value.result();
+      new_state.ip = curr_state->ip + 3;
+
+      // new way, with memory access exceptions
+      GuardedAddressWord address(curr_state);
+      address.copyFrom(curr_state->ip + 1);
+      if(address.exception())
+        return raise_exception(&new_state);
+      GuardedAddressByte value(curr_state);
+      value.loadAt(address.value());
+      if(value.exception())
+        return raise_exception(&new_state);
+      new_state.rA = value.value;
+      new_state.ip = curr_state->ip + 3;
+
+      // 'functional' ?
+      void *result = load_word(load, curr_state->ip + 1, curr_state);
+      return result();
+
+      // first thought
+      ATTEMPT attempt1 = load_word(load, curr_state->ip + 1, curr_state);
+      if( attempt1.failed)
+        return raise_exception(&new_state);
+      ATTEMPT attempt2 = load( attempt1.value, curr_state);
+      if( attempt2.failed)
+        return raise_exception(&new_state);
+      new_state.rA = attempt2.value;
+      new_state.ip = curr_state->ip + 3;
+
+      // old way, w/o exceptions
+      POINTER addr = load_word(load, curr_state->ip + 1);
+      new_state.rA = load( addr);
       new_state.ip = curr_state->ip + 3;
       break;
     }
     case INSTR_STORE: {
-      REGISTER upper_addr = load( curr_state->ip + 1);
-      REGISTER lower_addr = load( curr_state->ip + 2);
-      store( curr_state->rA, upper_addr << 8 | lower_addr);
+      POINTER addr = load_word(load, curr_state->ip + 1);
+      store( curr_state->rA, addr);
       new_state.ip = curr_state->ip + 3;
       break;
     }
@@ -157,7 +222,7 @@ struct cpu_state cpu(
       break;
     }
     case INSTR_ADD: {
-      IP addr = load_word(load, curr_state->ip + 1);
+      POINTER addr = load_word(load, curr_state->ip + 1);
       REGISTER data = load( addr);
       new_state.rA = curr_state->rA + data;
       new_state.ip = curr_state->ip + 3;
@@ -213,10 +278,10 @@ struct cpu_state cpu(
 
 uint8_t _debug = 0;
 
-IP RAMTOP;
+POINTER RAMTOP;
 uint8_t *ram;
 
-REGISTER load( IP addr) {
+REGISTER load( POINTER addr) {
   if( addr == 0xFFFF) {
     return getchar();
   }
@@ -224,7 +289,7 @@ REGISTER load( IP addr) {
   return ram[addr % (RAMTOP+1)];
 }
 
-void store( REGISTER value, IP addr) {
+void store( REGISTER value, POINTER addr) {
   // memory mapped IO, or at least O
   if(addr == 0xFFFF) {
     if( _debug)
@@ -303,7 +368,7 @@ int main( int argc, char *argv[] ) {
     return 1;
   }
 
-  IP c = 0;
+  POINTER c = 0;
   FILE *stream = fopen(argv[optind], "r");
   while( !feof(stream)) {
     store( fgetc(stream), c);
