@@ -12,7 +12,7 @@ When an Exception or Trap occurs, P is set, E is set, and execution continues at
 The Exception vector address (EVA) can only be set when P is set.
 
 ## Instructions valid ONLY when P is set
-- `SPMW yy` - set priviledged memory window upper bound to 256 byte segment number _yy_
+- `SPMW xxxx` - set priviledged memory window upper bound
 - `SEVA xxxx` - set exception vector address
 - `JEX xxxx` - jump if exception flag set
 - `JCPF xxxx` - jump and clear P flag

@@ -32,6 +32,7 @@ const FLAG FLAG_PMODE = 1 << 3;
 #define INSTR_SSP 0x17
 #define INSTR_SEVA 0x18
 #define INSTR_SPMW 0x19
+#define INSTR_JCPF 0x1A
 
 typedef REGISTER (*loader_t)(POINTER);
 typedef void (*storer_t)(REGISTER, POINTER);
@@ -43,8 +44,20 @@ typedef struct cpu_state {
   POINTER sp;
   POINTER ds;
   POINTER eva;
-  REGISTER pmw;
+  POINTER pmw;
 } cpu_state;
+
+typedef struct REGISTER_ATTEMPT {
+  uint8_t failed;
+  REGISTER value;
+} REGISTER_ATTEMPT;
+
+typedef struct POINTER_ATTEMPT {
+  uint8_t failed;
+  POINTER value;
+} POINTER_ATTEMPT;
+
+uint8_t _debug = 0;
 
 POINTER load_word( loader_t load, POINTER addr) {
   REGISTER upper_addr = load( addr);
@@ -59,38 +72,41 @@ void store_word( storer_t store, POINTER val, POINTER addr) {
   store(val_lo, addr + 1);
 }
 
-int illegal_memory_access(POINTER addr) {
-  return 0; // TODO
+cpu_state raise_exception(cpu_state *state) {
+  state->flags |= FLAG_EXCEPTION;
+  state->flags |= FLAG_PMODE;
+  state->ip = state->eva;
+  return *state;
 }
 
-void raise_exception(cpu_state *state) {
-  // TODO
+POINTER_ATTEMPT load_word_attempt(loader_t load, POINTER addr, cpu_state *state) {
+  POINTER_ATTEMPT ret;
+  if( (addr < state->pmw || (addr + 1) < state->pmw) && !(state->flags & FLAG_PMODE) ) {
+    if( _debug) printf("DEBUG[FAILED LOAD WORD] addr:%.4x\n", addr);
+    ret.failed = 1;
+    return ret;
+  }
+  ret.failed = 0;
+  ret.value = load_word(load, addr);
+  return ret;
 }
 
-class GuardedAddress {
-  public:
-    GuardedAddress(cpu_state *state) {
-    }
-
-    void copyFrom(POINTER addr) {
-    }
-
-    bool exception() {
-    }
-
-    REGISTER value() {
-    }
-
-  private:
-    cpu_state *state;
-};
+REGISTER_ATTEMPT load_attempt(loader_t load, POINTER addr, cpu_state *state) {
+  REGISTER_ATTEMPT ret;
+  if( (addr < state->pmw) && !(state->flags & FLAG_PMODE) ) {
+    if( _debug) printf("DEBUG[FAILED LOAD BYTE] addr:%.4x\n", addr);
+    ret.failed = 1;
+    return ret;
+  }
+  ret.failed = 0;
+  ret.value = load(addr);
+  return ret;
+}
 
 struct cpu_state cpu(
   cpu_state *curr_state,
   loader_t load,
-  storer_t store,
-  loader_t io_read,
-  storer_t io_write 
+  storer_t store
 ) {
   cpu_state new_state;
   new_state.flags = curr_state->flags;
@@ -101,54 +117,26 @@ struct cpu_state cpu(
   new_state.eva = curr_state->eva;
   new_state.pmw = curr_state->pmw;
 
-  if( illegal_memory_access(curr_state->ip)) {
-    raise_exception(&new_state);
-    return new_state;
-  }
-  INSTR instruction = load( curr_state->ip);
-  switch( instruction) {
+  REGISTER_ATTEMPT inst = load_attempt(load, curr_state->ip, curr_state);
+  if( inst.failed)
+    return raise_exception(&new_state);
+  switch( inst.value) {
     case INSTR_LOAD: {
-      // new new way, w/o literal address storage class
-      GuardedMemoryAccessWord addr(curr_state, curr_state->ip + 1);
-      if( addr.exception())
-        return addr.modifiedState();
-      GuardedMemoryAccessByte value(curr_state, addr.result());
-      if( value.exception())
-        return value.modifiedState();
-      new_state.rA = value.result();
-      new_state.ip = curr_state->ip + 3;
-
-      // new way, with memory access exceptions
-      GuardedAddressWord address(curr_state);
-      address.copyFrom(curr_state->ip + 1);
-      if(address.exception())
+      POINTER_ATTEMPT p_att = load_word_attempt(load, curr_state->ip + 1, curr_state);
+      if( p_att.failed)
         return raise_exception(&new_state);
-      GuardedAddressByte value(curr_state);
-      value.loadAt(address.value());
-      if(value.exception())
+      REGISTER_ATTEMPT r_att = load_attempt(load, p_att.value, curr_state);
+      if( r_att.failed)
         return raise_exception(&new_state);
-      new_state.rA = value.value;
-      new_state.ip = curr_state->ip + 3;
-
-      // 'functional' ?
-      void *result = load_word(load, curr_state->ip + 1, curr_state);
-      return result();
-
-      // first thought
-      ATTEMPT attempt1 = load_word(load, curr_state->ip + 1, curr_state);
-      if( attempt1.failed)
-        return raise_exception(&new_state);
-      ATTEMPT attempt2 = load( attempt1.value, curr_state);
-      if( attempt2.failed)
-        return raise_exception(&new_state);
-      new_state.rA = attempt2.value;
-      new_state.ip = curr_state->ip + 3;
-
-      // old way, w/o exceptions
-      POINTER addr = load_word(load, curr_state->ip + 1);
-      new_state.rA = load( addr);
+      new_state.rA = r_att.value;
       new_state.ip = curr_state->ip + 3;
       break;
+
+      // // old way, w/o exceptions
+      // POINTER addr = load_word(load, curr_state->ip + 1);
+      // new_state.rA = load( addr);
+      // new_state.ip = curr_state->ip + 3;
+      // break;
     }
     case INSTR_STORE: {
       POINTER addr = load_word(load, curr_state->ip + 1);
@@ -261,22 +249,25 @@ struct cpu_state cpu(
     }
     case INSTR_SPMW: {
       if( curr_state->flags & FLAG_PMODE)
-        new_state.pmw = load(curr_state->ip + 1);
-      new_state.ip = curr_state->ip + 2;
+        new_state.pmw = load_word(load, curr_state->ip + 1);
+      new_state.ip = curr_state->ip + 3;
       break;
     }
+    case INSTR_JCPF: {
+      if( curr_state->flags & FLAG_PMODE) {
+        new_state.ip = load_word(load, curr_state->ip + 1);
+        new_state.flags &= ~FLAG_PMODE;
+      } else {
+        new_state.ip = curr_state->ip + 3;
+      }
+    }
     default: {
-      // throw an exception
-      new_state.flags |= FLAG_EXCEPTION;
-      new_state.rA = instruction;
-      new_state.ip = curr_state->eva;
+      return raise_exception(&new_state);
       break;
     }
   }
   return new_state;
 }
-
-uint8_t _debug = 0;
 
 POINTER RAMTOP;
 uint8_t *ram;
@@ -304,13 +295,15 @@ void store( REGISTER value, POINTER addr) {
 
 void debug_state( cpu_state state) {
   if( _debug == 0) return;
-  printf("DEBUG[CPU] flags:%.2x ip:%.4x sp:%.4x ds:%.4x rA:%.2x\n", state.flags, state.ip, state.sp, state.ds, state.rA);
+  printf("DEBUG[CPU] flags:%.2x ip:%.4x sp:%.4x ds:%.4x rA:%.2x eva:%.4x pmw:%.4x\n",
+    state.flags, state.ip, state.sp, state.ds, state.rA, state.eva, state.pmw);
 }
 
 void debug_dump(uint8_t *block, uint16_t start, uint16_t end) {
   if( _debug == 0) return;
   if( start % 16 != 0) {
-    printf("%.4x  ", start); // the odd spacing indicates it's misaligned, which is better than nothing until I figure out how to properly align it
+    printf("%.4x  ", start); // the odd spacing indicates it's misaligned, which is better than
+                             // nothing until I figure out how to properly align it
   }
   for( uint16_t i = start; i <= end; i += 1) {
     if( i % 16 == 0) {
@@ -388,7 +381,7 @@ int main( int argc, char *argv[] ) {
 
   while( (state.flags & FLAG_HALT) == 0) {
     debug_state(state);
-    next_state = cpu( &state, &load, &store, &load, &store);
+    next_state = cpu( &state, &load, &store);
     state = next_state;
   }
 

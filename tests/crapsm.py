@@ -18,8 +18,8 @@ def convert( word, labels):
     return (0, '')
   if word in labels:
     return (2, "%0.2X %0.2X" % (labels[word] >> 8, labels[word] & 0xFF ) )
-  mnuemonics = [ 'LOAD', 'STORE', 'ADDI', 'NOP', 'CMP', 'JE', 'JLT', 'JMP', 'PUSH', 'POP', 'HALT', 'SHIFTL', 'ADD', 'CALL', 'RET', 'SDS', 'SSP', 'SEVA']
-  opcodes =    [ '08'  , '09'   , '0A'  , '00' , '0B' , '0C', '0D' , '0E' , '0F'  , '10' , '11'  , '12'    , '13' , '14'  , '15' , '16' , '17' , '18'  ]
+  mnuemonics = [ 'LOAD', 'STORE', 'ADDI', 'NOP', 'CMP', 'JE', 'JLT', 'JMP', 'PUSH', 'POP', 'HALT', 'SHIFTL', 'ADD', 'CALL', 'RET', 'SDS', 'SSP', 'SEVA', 'SPMW', 'JCPF']
+  opcodes =    [ '08'  , '09'   , '0A'  , '00' , '0B' , '0C', '0D' , '0E' , '0F'  , '10' , '11'  , '12'    , '13' , '14'  , '15' , '16' , '17' , '18'  , '19'  , '1A'  ]
   if word in mnuemonics:
     return (1, opcodes[mnuemonics.index(word)])
   if two_digit_hex.match(word):
