@@ -72,16 +72,36 @@ void store_word( storer_t store, POINTER val, POINTER addr) {
   store(val_lo, addr + 1);
 }
 
+void debug_state( cpu_state state) {
+  if( _debug == 0) return;
+  printf("DEBUG[CPU] flags:%.2x ip:%.4x sp:%.4x ds:%.4x rA:%.2x eva:%.4x pmw:%.4x\n",
+    state.flags, state.ip, state.sp, state.ds, state.rA, state.eva, state.pmw);
+}
+
 cpu_state raise_exception(cpu_state *state) {
+  if(_debug) printf("DEBUG[RAISE EXCEPTION]\n");
+  debug_state( *state);
   state->flags |= FLAG_EXCEPTION;
   state->flags |= FLAG_PMODE;
   state->ip = state->eva;
   return *state;
 }
 
+uint8_t inPMode(cpu_state *state) {
+  if( (state->flags & FLAG_PMODE) == 0)
+    return 0;
+  return 1;
+}
+
+uint8_t insidePMWindow(cpu_state *state, POINTER addr) {
+  if( addr < state->pmw) 
+    return 1;
+  return 0;
+}
+
 POINTER_ATTEMPT load_word_attempt(loader_t load, POINTER addr, cpu_state *state) {
   POINTER_ATTEMPT ret;
-  if( (addr < state->pmw || (addr + 1) < state->pmw) && !(state->flags & FLAG_PMODE) ) {
+  if( !inPMode(state) && (insidePMWindow(state, addr) || insidePMWindow(state, addr+1))) {
     if( _debug) printf("DEBUG[FAILED LOAD WORD] addr:%.4x\n", addr);
     ret.failed = 1;
     return ret;
@@ -93,7 +113,7 @@ POINTER_ATTEMPT load_word_attempt(loader_t load, POINTER addr, cpu_state *state)
 
 REGISTER_ATTEMPT load_attempt(loader_t load, POINTER addr, cpu_state *state) {
   REGISTER_ATTEMPT ret;
-  if( (addr < state->pmw) && !(state->flags & FLAG_PMODE) ) {
+  if( !inPMode(state) && insidePMWindow(state, addr)) {
     if( _debug) printf("DEBUG[FAILED LOAD BYTE] addr:%.4x\n", addr);
     ret.failed = 1;
     return ret;
@@ -118,8 +138,10 @@ struct cpu_state cpu(
   new_state.pmw = curr_state->pmw;
 
   REGISTER_ATTEMPT inst = load_attempt(load, curr_state->ip, curr_state);
-  if( inst.failed)
+  if( inst.failed) {
+    if( _debug) printf("DEBUG[FAILED LOAD INSTR] addr:%.4x\n", curr_state->ip);
     return raise_exception(&new_state);
+  }
   switch( inst.value) {
     case INSTR_LOAD: {
       POINTER_ATTEMPT p_att = load_word_attempt(load, curr_state->ip + 1, curr_state);
@@ -131,12 +153,6 @@ struct cpu_state cpu(
       new_state.rA = r_att.value;
       new_state.ip = curr_state->ip + 3;
       break;
-
-      // // old way, w/o exceptions
-      // POINTER addr = load_word(load, curr_state->ip + 1);
-      // new_state.rA = load( addr);
-      // new_state.ip = curr_state->ip + 3;
-      // break;
     }
     case INSTR_STORE: {
       POINTER addr = load_word(load, curr_state->ip + 1);
@@ -260,8 +276,10 @@ struct cpu_state cpu(
       } else {
         new_state.ip = curr_state->ip + 3;
       }
+      break;
     }
     default: {
+      if( _debug) printf("DEBUG[UNKNOWN INSTRUCTION] instr:%.2x\n", inst.value);
       return raise_exception(&new_state);
       break;
     }
@@ -291,12 +309,6 @@ void store( REGISTER value, POINTER addr) {
   }
   if( _debug) printf("DEBUG[STORE] addr:%.4x value:%.4x\n", addr, value);
   ram[addr % (RAMTOP+1)] = value;
-}
-
-void debug_state( cpu_state state) {
-  if( _debug == 0) return;
-  printf("DEBUG[CPU] flags:%.2x ip:%.4x sp:%.4x ds:%.4x rA:%.2x eva:%.4x pmw:%.4x\n",
-    state.flags, state.ip, state.sp, state.ds, state.rA, state.eva, state.pmw);
 }
 
 void debug_dump(uint8_t *block, uint16_t start, uint16_t end) {

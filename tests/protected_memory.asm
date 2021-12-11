@@ -7,7 +7,6 @@ SEVA exception_vector
 # jump to init, which will trampoline to user mode
 JMP init
 
-
 :exception_vector
 # print !EX\n and halt
 LOAD char_bang
@@ -37,9 +36,8 @@ HALT
 STORE FF FF
 STORE FF FF
 STORE FF FF
-# execute an undefined instruction to cause an exception
-DB 44
-HALT
+# now try to jump back into protected memory; this would be an inf. loop, but it'll throw instead
+JMP init
 
 :char_A
 DB 41
