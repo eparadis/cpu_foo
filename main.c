@@ -123,6 +123,18 @@ REGISTER_ATTEMPT load_attempt(loader_t load, POINTER addr, cpu_state *state) {
   return ret;
 }
 
+REGISTER_ATTEMPT store_attempt(storer_t store, REGISTER value, POINTER addr, cpu_state *state) {
+  REGISTER_ATTEMPT ret;
+  if( !inPMode(state) && insidePMWindow(state, addr)) {
+    if( _debug) printf("DEBUG[FAILED STORE BYTE] addr:%.4x\n", addr);
+    ret.failed = 1;
+    return ret;
+  }
+  ret.failed = 0;
+  store(value, addr);
+  return ret;
+}
+
 struct cpu_state cpu(
   cpu_state *curr_state,
   loader_t load,
@@ -155,8 +167,12 @@ struct cpu_state cpu(
       break;
     }
     case INSTR_STORE: {
-      POINTER addr = load_word(load, curr_state->ip + 1);
-      store( curr_state->rA, addr);
+      POINTER_ATTEMPT p_att = load_word_attempt(load, curr_state->ip + 1, curr_state);
+      if( p_att.failed)
+        return raise_exception(&new_state);
+      REGISTER_ATTEMPT s_att = store_attempt(store, curr_state->rA, p_att.value, curr_state);
+      if( s_att.failed)
+        return raise_exception(&new_state);
       new_state.ip = curr_state->ip + 3;
       break;
     }
