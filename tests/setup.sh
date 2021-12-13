@@ -27,6 +27,8 @@ echo "assembling monitor"
 ./crapsm.py monitor.asm monitor.bin
 echo "assembling exception_vector"
 ./crapsm.py exception_vector.asm exception_vector.bin
+echo "assembling protected_memory"
+./crapsm.py protected_memory.asm protected_memory.bin
 
 # send a small program to display a single character into the loader
 ./send.py tiny_echo.bin | ./main tiny_loader.bin
@@ -54,3 +56,6 @@ echo "L0100 W23 W08 W01 W00 W09 WFF WFF W11 G0101" | ./main -r 512 monitor.bin
 
 # print some characters and then try to execute an illegal instruction
 ./main exception_vector.bin
+
+# setup a user code area and jump to it, then try and jump back
+./main protected_memory.bin
