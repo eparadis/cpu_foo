@@ -149,6 +149,30 @@ struct cpu_state cpu(
   new_state.eva = curr_state->eva;
   new_state.pmw = curr_state->pmw;
 
+  if( PMODE) {
+    // ..
+  } else {
+    // we cheat and peek at the next inst to find its size
+    int inst_size = lookup_size(load(curr_state->ip));
+    // raise an excception if we can't even load the full instruction
+    if( inst_size == 3 && insidePMW(curr_state->ip+2))
+      raise_exception();
+    if( inst_size >= 2 && insidePMW(curr_state->ip+1))
+      raise_exception();
+    if( inst_size >= 1 && insidePMW(curr_state->ip))
+      raise_exception();
+  }
+  // if we've gotten this far, simply accessing memory to load the instruction is ok
+  if( PMODE) {
+    // ..
+  } else {
+    if( inst_size == 3) {
+      // all size 3 instr use the 2nd and 3rd bytes as an address
+      POINTER addr = load_word(load, curr_state->ip+1);
+      if( insidePMW( addr))
+        raise_exceptoin(); // we can't load or store or jump to an address inside the PMW
+      
+
   REGISTER_ATTEMPT inst = load_attempt(load, curr_state->ip, curr_state);
   if( inst.failed) {
     if( _debug) printf("DEBUG[FAILED LOAD INSTR] addr:%.4x\n", curr_state->ip);
