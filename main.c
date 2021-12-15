@@ -171,7 +171,16 @@ struct cpu_state cpu(
       POINTER addr = load_word(load, curr_state->ip+1);
       if( insidePMW( addr))
         raise_exceptoin(); // we can't load or store or jump to an address inside the PMW
-      
+      // ..
+    }
+    // size two instr use the give byte for a variety of mathy things and can't cause 
+    //   a memory exception depending on their parameter
+    // size one instr have no param to cause a memory exception
+
+
+  }
+
+
 
   REGISTER_ATTEMPT inst = load_attempt(load, curr_state->ip, curr_state);
   if( inst.failed) {
