@@ -123,6 +123,18 @@ REGISTER_ATTEMPT load_attempt(loader_t load, POINTER addr, cpu_state *state) {
   return ret;
 }
 
+POINTER_ATTEMPT store_word_attempt(storer_t store, POINTER value, POINTER addr, cpu_state *state) {
+  POINTER_ATTEMPT ret;
+  if( !inPMode(state) && (insidePMWindow(state, addr) || insidePMWindow(state, addr+1))) {
+    if( _debug) printf("DEBUG[FAILED STORE WORD] addr:%.4x\n", addr);
+    ret.failed = 1;
+    return ret;
+  }
+  ret.failed = 0;
+  store_word(store, value, addr);
+  return ret;
+}
+
 REGISTER_ATTEMPT store_attempt(storer_t store, REGISTER value, POINTER addr, cpu_state *state) {
   REGISTER_ATTEMPT ret;
   if( !inPMode(state) && insidePMWindow(state, addr)) {
@@ -157,28 +169,25 @@ struct cpu_state cpu(
   switch( inst.value) {
     case INSTR_LOAD: {
       POINTER_ATTEMPT p_att = load_word_attempt(load, curr_state->ip + 1, curr_state);
-      if( p_att.failed)
-        return raise_exception(&new_state);
+      if( p_att.failed) return raise_exception(&new_state);
       REGISTER_ATTEMPT r_att = load_attempt(load, p_att.value, curr_state);
-      if( r_att.failed)
-        return raise_exception(&new_state);
+      if( r_att.failed) return raise_exception(&new_state);
       new_state.rA = r_att.value;
       new_state.ip = curr_state->ip + 3;
       break;
     }
     case INSTR_STORE: {
       POINTER_ATTEMPT p_att = load_word_attempt(load, curr_state->ip + 1, curr_state);
-      if( p_att.failed)
-        return raise_exception(&new_state);
+      if( p_att.failed) return raise_exception(&new_state);
       REGISTER_ATTEMPT s_att = store_attempt(store, curr_state->rA, p_att.value, curr_state);
-      if( s_att.failed)
-        return raise_exception(&new_state);
+      if( s_att.failed) return raise_exception(&new_state);
       new_state.ip = curr_state->ip + 3;
       break;
     }
     case INSTR_ADDI: {
-      REGISTER addend = load( curr_state->ip + 1);
-      new_state.rA = curr_state->rA + addend;
+      REGISTER_ATTEMPT addend = load_attempt(load, curr_state->ip + 1, curr_state);
+      if( addend.failed) return raise_exception(&new_state);
+      new_state.rA = curr_state->rA + addend.value;
       new_state.ip = curr_state->ip + 2;
       break;
     }
@@ -187,12 +196,13 @@ struct cpu_state cpu(
       break;
     }
     case INSTR_CMP: {
-      REGISTER value = load( curr_state->ip + 1);
-      if( curr_state->rA == value)
+      REGISTER_ATTEMPT value = load_attempt(load, curr_state->ip + 1, curr_state);
+      if( value.failed) return raise_exception(&new_state);
+      if( curr_state->rA == value.value)
         new_state.flags |= FLAG_EQ;
       else
         new_state.flags &= ~FLAG_EQ;
-      if(curr_state->rA > value)
+      if(curr_state->rA > value.value)
         new_state.flags |= FLAG_GT;
       else
         new_state.flags &= ~FLAG_GT; 
@@ -201,7 +211,9 @@ struct cpu_state cpu(
     }
     case INSTR_JE: {
       if( curr_state->flags & FLAG_EQ ) {
-        new_state.ip = load_word(load, curr_state->ip + 1);
+        POINTER_ATTEMPT p_att = load_word_attempt(load, curr_state->ip + 1, curr_state);
+        if( p_att.failed) return raise_exception(&new_state);
+        new_state.ip = p_att.value;
         break;
       }
       new_state.ip = curr_state->ip + 3;
@@ -209,24 +221,31 @@ struct cpu_state cpu(
     }
     case INSTR_JLT: {
       if( !(curr_state->flags & FLAG_GT) && !(curr_state->flags & FLAG_EQ) ) {
-        new_state.ip = load_word(load, curr_state->ip + 1);
+        POINTER_ATTEMPT p_att = load_word_attempt(load, curr_state->ip + 1, curr_state);
+        if( p_att.failed) return raise_exception(&new_state);
+        new_state.ip = p_att.value;
         break;
       }
       new_state.ip = curr_state->ip + 3;
       break;
     }
     case INSTR_JMP: {
-      new_state.ip = load_word(load, curr_state->ip + 1);
+      POINTER_ATTEMPT p_att = load_word_attempt(load, curr_state->ip + 1, curr_state);
+      if( p_att.failed) return raise_exception(&new_state);
+      new_state.ip = p_att.value;
       break;
     }
     case INSTR_PUSH: {
       new_state.ds = curr_state->ds - 1;
-      store( curr_state->rA, new_state.ds);
+      REGISTER_ATTEMPT s_att = store_attempt(store, curr_state->rA, new_state.ds, curr_state);
+      if( s_att.failed) return raise_exception(&new_state);
       new_state.ip = curr_state->ip + 1;
       break;
     }
     case INSTR_POP: {
-      new_state.rA = load( curr_state->ds );
+      REGISTER_ATTEMPT value = load_attempt(load, curr_state->ds, curr_state);
+      if( value.failed) return raise_exception(&new_state);
+      new_state.rA = value.value;
       new_state.ds = curr_state->ds + 1;
       new_state.ip = curr_state->ip + 1;
       break;
@@ -242,8 +261,12 @@ struct cpu_state cpu(
       break;
     }
     case INSTR_ADD: {
-      POINTER addr = load_word(load, curr_state->ip + 1);
-      REGISTER data = load( addr);
+      POINTER_ATTEMPT p_att = load_word_attempt(load, curr_state->ip + 1, curr_state);
+      if( p_att.failed) return raise_exception(&new_state);
+      POINTER addr = p_att.value;
+      REGISTER_ATTEMPT value = load_attempt(load, addr, curr_state);
+      if( value.failed) return raise_exception(&new_state);
+      REGISTER data = value.value;
       new_state.rA = curr_state->rA + data;
       new_state.ip = curr_state->ip + 3;
       break;
@@ -251,13 +274,18 @@ struct cpu_state cpu(
     case INSTR_CALL: {
       // push the addr of the _next_ instruction
       new_state.sp = curr_state->sp - 2;
-      store_word(store, curr_state->ip + 3, new_state.sp);
+      POINTER_ATTEMPT s_att = store_word_attempt(store, curr_state->ip + 3, new_state.sp, curr_state);
+      if( s_att.failed) return raise_exception(&new_state);
       // jump to the given address
-      new_state.ip = load_word(load, curr_state->ip + 1);
+      POINTER_ATTEMPT addr = load_word_attempt(load, curr_state->ip + 1, curr_state);
+      if( addr.failed) return raise_exception(&new_state);
+      new_state.ip = addr.value;
       break;
     }
     case INSTR_RET: {
-      new_state.ip = load_word(load, curr_state->sp);
+      POINTER_ATTEMPT addr = load_word_attempt(load, curr_state->sp, curr_state);
+      if( addr.failed) return raise_exception(&new_state);
+      new_state.ip = addr.value;
       new_state.sp = curr_state->sp + 2;
       break;
     }
