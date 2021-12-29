@@ -29,9 +29,9 @@ def convert( word, labels):
 
 labels = {}
 
-def do_pass(infilename, outfilename, labels, write):
+def do_pass(infilename, outfilename, labels, write, offset):
   with open(infilename, 'r') as infile, open(outfilename, 'wb') as outfile:
-    position = 0
+    position = offset
     for line in infile:
       if line[0] == '#':
         continue
@@ -52,8 +52,8 @@ def do_pass(infilename, outfilename, labels, write):
           outfile.write(bytes.fromhex(val))
     print()
 
-do_pass(infilename, outfilename, labels, False)
-do_pass(infilename, outfilename, labels, True)
+do_pass(infilename, outfilename, labels, False, 0x100)
+do_pass(infilename, outfilename, labels, True, 0x100)
 
 
 #  data = f.read(length)
